@@ -7,29 +7,44 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMMANDS_DIR="${SCRIPT_DIR}/commands"
+VERSION_FILE="${SCRIPT_DIR}/VERSION"
 
 # Available commands
-AVAILABLE_COMMANDS=("dlvid" "duplicates" "renameseq")
+AVAILABLE_COMMANDS=("dlvid" "duplicates" "renameseq" "update")
+
+# Get version
+get_version() {
+    if [[ -f "$VERSION_FILE" ]]; then
+        cat "$VERSION_FILE"
+    else
+        echo "unknown"
+    fi
+}
 
 show_help() {
+    local version
+    version=$(get_version)
     cat << EOF
-lugo - A collection of utility scripts
+lugo - A collection of utility scripts (v${version})
 
-Usage: lugo [--help] [command] [args...]
+Usage: lugo [--help] [--version] [command] [args...]
 
 Available commands:
     dlvid       Download videos from internet
     duplicates  Find duplicated files
     renameseq   Rename files sequentially
+    update      Update lugo to the latest version
 
 Options:
     --help      Show this help message
+    --version   Show version information
 
 Examples:
     lugo --help
     lugo dlvid --help
     lugo duplicates /path/to/search
     lugo renameseq *.jpg
+    lugo update
 
 EOF
 }
@@ -49,6 +64,11 @@ command_exists() {
 main() {
     if [[ $# -eq 0 ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
         show_help
+        exit 0
+    fi
+
+    if [[ "$1" == "--version" ]] || [[ "$1" == "-v" ]]; then
+        echo "lugo version $(get_version)"
         exit 0
     fi
 

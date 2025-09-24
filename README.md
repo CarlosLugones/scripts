@@ -11,12 +11,21 @@ The lugo command system provides a modular approach to managing utility scripts.
 - **dlvid** - Download videos from internet
 - **duplicates** - Find duplicated files in directories  
 - **renameseq** - Rename files sequentially with customizable patterns
+- **update** - Update lugo to the latest version from GitHub
 
 ## Installation
 
 ### Quick Install
 
 ```bash
+curl -sSL https://raw.githubusercontent.com/CarlosLugones/scripts/main/install.sh | bash
+```
+
+Or clone and install locally:
+
+```bash
+git clone https://github.com/CarlosLugones/scripts.git
+cd scripts
 ./install.sh
 ```
 
@@ -42,10 +51,16 @@ This will install all commands to `~/.local/bin/` and create both the main `lugo
 # Show help and available commands
 lugo --help
 
+# Show version information  
+lugo --version
+
 # Use individual commands through lugo
 lugo dlvid --help
 lugo duplicates /path/to/search
 lugo renameseq *.jpg
+
+# Update to latest version
+lugo update
 ```
 
 ### Using individual commands directly
@@ -56,6 +71,7 @@ After installation, you can also use commands directly:
 dlvid --help
 duplicates --recursive ~/Documents
 renameseq --prefix photo *.png
+update --check-only  # Check for updates
 ```
 
 ## Command Details
@@ -114,6 +130,24 @@ lugo renameseq --prefix photo --start 10 *.png
 lugo renameseq --digits 4 --prefix img *.gif
 ```
 
+### update - Update Lugo System
+
+```bash
+lugo update [--help] [--check-only] [--force]
+```
+
+**Options:**
+- `--help` - Show help message
+- `--check-only` - Only check for updates without installing
+- `--force` - Force update even if versions are the same
+
+**Examples:**
+```bash
+lugo update                    # Update to latest version
+lugo update --check-only       # Check if updates are available
+lugo update --force            # Force reinstall current version
+```
+
 ## Development
 
 ### Adding New Commands
@@ -128,11 +162,16 @@ lugo renameseq --digits 4 --prefix img *.gif
 ```
 .
 ├── lugo                    # Main command dispatcher
+├── VERSION                 # Version file
 ├── commands/               # Individual command scripts  
 │   ├── dlvid              # Video download command
 │   ├── duplicates         # Duplicate file finder
-│   └── renameseq          # Sequential file renamer
+│   ├── renameseq          # Sequential file renamer
+│   └── update             # Update command
 ├── install.sh             # Installation script
+├── Makefile               # Build and test targets
+├── .github/workflows/     # GitHub Actions
+│   └── version-bump.yml  # Automatic versioning
 └── README.md              # This documentation
 ```
 
@@ -140,6 +179,17 @@ lugo renameseq --digits 4 --prefix img *.gif
 
 - Bash 4.0+ (available by default on macOS and most Linux distributions)
 - POSIX-compatible system (macOS, Linux, WSL)
+- `git` and `curl` (for update functionality)
+
+## Versioning
+
+This project uses semantic versioning (MAJOR.MINOR.PATCH). Versions are automatically bumped using GitHub Actions:
+
+- **Major** (X.0.0): Breaking changes (commit message contains "breaking" or "major")
+- **Minor** (0.X.0): New features (commit message contains "feat", "feature", or "minor")  
+- **Patch** (0.0.X): Bug fixes and other changes (default)
+
+To skip automatic version bumping, include `[skip-version]` in your commit message.
 
 ## Platform Support
 

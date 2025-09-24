@@ -33,10 +33,14 @@ test:
 	@echo "=== Testing main lugo command ==="
 	@./lugo --help
 	@echo ""
+	@echo "=== Testing version command ==="
+	@./lugo --version
+	@echo ""
 	@echo "=== Testing individual commands ==="
 	@./lugo dlvid --help | head -3
 	@./lugo duplicates --help | head -3  
 	@./lugo renameseq --help | head -3
+	@./lugo update --help | head -3
 	@echo ""
 	@echo "=== Testing command execution ==="
 	@./lugo dlvid https://example.com

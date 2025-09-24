@@ -1,0 +1,126 @@
+name: Auto Version Bump
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'VERSION'
+      - '.github/**'
+      - 'README.md'
+      - '*.md'
+
+jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip-version]')"
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Configure Git
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+    
+    - name: Get current version
+      id: current_version
+      run: |
+        if [ -f VERSION ]; then
+          echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+        else
+          echo "version=1.0.0" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Determine version bump type
+      id: bump_type
+      run: |
+        # Check commit messages for version bump indicators
+        COMMIT_MSG="${{ github.event.head_commit.message }}"
+        
+        if echo "$COMMIT_MSG" | grep -i -E "(breaking|major)" > /dev/null; then
+          echo "type=major" >> $GITHUB_OUTPUT
+        elif echo "$COMMIT_MSG" | grep -i -E "(feat|feature|minor)" > /dev/null; then
+          echo "type=minor" >> $GITHUB_OUTPUT
+        else
+          echo "type=patch" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Bump version
+      id: new_version
+      run: |
+        CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
+        BUMP_TYPE="${{ steps.bump_type.outputs.type }}"
+        
+        # Parse current version
+        IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+        MAJOR=${VERSION_PARTS[0]:-1}
+        MINOR=${VERSION_PARTS[1]:-0}
+        PATCH=${VERSION_PARTS[2]:-0}
+        
+        # Bump version based on type
+        case $BUMP_TYPE in
+          major)
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            ;;
+          minor)
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            ;;
+          patch)
+            PATCH=$((PATCH + 1))
+            ;;
+        esac
+        
+        NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+        echo "$NEW_VERSION" > VERSION
+        echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+    
+    - name: Commit version change
+      run: |
+        git add VERSION
+        git commit -m "chore: bump version to ${{ steps.new_version.outputs.version }} [skip-version]"
+        git push
+    
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.new_version.outputs.version }}
+        release_name: Release v${{ steps.new_version.outputs.version }}
+        body: |
+          ## Changes
+          
+          Auto-generated release for version ${{ steps.new_version.outputs.version }}
+          
+          **Version bump type:** ${{ steps.new_version.outputs.bump_type }}
+          
+          ### Recent Commits
+          ${{ github.event.head_commit.message }}
+          
+          ### Installation
+          
+          ```bash
+          # Direct installation
+          curl -sSL https://raw.githubusercontent.com/CarlosLugones/scripts/main/install.sh | bash
+          
+          # Or clone and install
+          git clone https://github.com/CarlosLugones/scripts.git
+          cd scripts
+          ./install.sh
+          ```
+          
+          ### Update existing installation
+          
+          ```bash
+          lugo update
+          ```
+        draft: false
+        prerelease: false

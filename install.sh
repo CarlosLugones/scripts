@@ -52,6 +52,12 @@ install_lugo() {
     cp "$SCRIPT_DIR/lugo" "$INSTALL_DIR/"
     chmod +x "$INSTALL_DIR/lugo"
 
+    # Copy VERSION file
+    if [[ -f "$SCRIPT_DIR/VERSION" ]]; then
+        cp "$SCRIPT_DIR/VERSION" "$INSTALL_DIR/"
+        print_status "Installed VERSION file"
+    fi
+
     # Copy commands directory
     print_status "Installing command scripts..."
     if [[ -d "$INSTALL_DIR/commands" ]]; then
@@ -59,13 +65,14 @@ install_lugo() {
     fi
     cp -r "$SCRIPT_DIR/commands" "$INSTALL_DIR/"
 
-    # Update the lugo script to use the installed commands directory
+    # Update the lugo script to use the installed commands directory and VERSION file
     sed -i.bak "s|COMMANDS_DIR=\"\${SCRIPT_DIR}/commands\"|COMMANDS_DIR=\"$INSTALL_DIR/commands\"|" "$INSTALL_DIR/lugo"
-    rm "$INSTALL_DIR/lugo.bak" 2>/dev/null || true
+    sed -i.bak2 "s|VERSION_FILE=\"\${SCRIPT_DIR}/VERSION\"|VERSION_FILE=\"$INSTALL_DIR/VERSION\"|" "$INSTALL_DIR/lugo"
+    rm "$INSTALL_DIR/lugo.bak" "$INSTALL_DIR/lugo.bak2" 2>/dev/null || true
 
     # Create individual command symlinks for direct access
     print_status "Creating individual command symlinks..."
-    for cmd in dlvid duplicates renameseq; do
+    for cmd in dlvid duplicates renameseq update; do
         if [[ -f "$INSTALL_DIR/$cmd" ]]; then
             rm "$INSTALL_DIR/$cmd"
         fi
@@ -89,10 +96,13 @@ install_lugo() {
     echo ""
     print_status "You can now use:"
     echo "  lugo --help          # Show main help"
+    echo "  lugo --version       # Show version"
     echo "  lugo dlvid --help    # Show dlvid help"
+    echo "  lugo update          # Update to latest version"
     echo "  dlvid --help         # Direct command access"
     echo "  duplicates --help    # Direct command access"
     echo "  renameseq --help     # Direct command access"
+    echo "  update --help        # Direct command access"
 }
 
 # Uninstall function
@@ -105,6 +115,12 @@ uninstall_lugo() {
         print_status "Removed lugo main command"
     fi
     
+    # Remove VERSION file
+    if [[ -f "$INSTALL_DIR/VERSION" ]]; then
+        rm "$INSTALL_DIR/VERSION"
+        print_status "Removed VERSION file"
+    fi
+    
     # Remove commands directory
     if [[ -d "$INSTALL_DIR/commands" ]]; then
         rm -rf "$INSTALL_DIR/commands"
@@ -112,7 +128,7 @@ uninstall_lugo() {
     fi
     
     # Remove individual command symlinks
-    for cmd in dlvid duplicates renameseq; do
+    for cmd in dlvid duplicates renameseq update; do
         if [[ -L "$INSTALL_DIR/$cmd" ]]; then
             rm "$INSTALL_DIR/$cmd"
             print_status "Removed $cmd symlink"
