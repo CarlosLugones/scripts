@@ -8,6 +8,8 @@ set -e
 # Configuration
 INSTALL_DIR="${HOME}/.local/bin"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_URL="https://github.com/CarlosLugones/scripts"
+TEMP_DIR="/tmp/lugo-install-$$"
 
 # Colors for output
 RED='\033[0;31m'
@@ -37,9 +39,82 @@ check_path() {
     fi
 }
 
+# Check if curl is available
+check_curl() {
+    if ! command -v curl >/dev/null 2>&1; then
+        print_error "curl is not installed or not in PATH"
+        print_error "Please install curl to use remote installation"
+        exit 1
+    fi
+}
+
+# Check if we need to download files (remote installation)
+needs_remote_download() {
+    [[ ! -f "$SCRIPT_DIR/lugo" ]] || [[ ! -d "$SCRIPT_DIR/commands" ]]
+}
+
+# Download required files from GitHub
+download_files() {
+    print_status "Detected remote installation, downloading files from GitHub..."
+    
+    check_curl
+    
+    # Create temporary directory
+    mkdir -p "$TEMP_DIR"
+    
+    # Download main lugo script
+    print_status "Downloading lugo command..."
+    if ! curl -sSL -f "$REPO_URL/raw/main/lugo" -o "$TEMP_DIR/lugo"; then
+        print_error "Failed to download lugo script"
+        cleanup_temp
+        exit 1
+    fi
+    chmod +x "$TEMP_DIR/lugo"
+    
+    # Download VERSION file
+    print_status "Downloading VERSION file..."
+    if ! curl -sSL -f "$REPO_URL/raw/main/VERSION" -o "$TEMP_DIR/VERSION"; then
+        print_warning "Failed to download VERSION file, continuing without it"
+    fi
+    
+    # Create commands directory and download command scripts
+    print_status "Downloading command scripts..."
+    mkdir -p "$TEMP_DIR/commands"
+    
+    # List of available commands (should match AVAILABLE_COMMANDS in lugo script)
+    local commands=("dlvid" "duplicates" "renameseq" "update")
+    
+    for cmd in "${commands[@]}"; do
+        if ! curl -sSL -f "$REPO_URL/raw/main/commands/$cmd" -o "$TEMP_DIR/commands/$cmd"; then
+            print_error "Failed to download command: $cmd"
+            cleanup_temp
+            exit 1
+        fi
+        chmod +x "$TEMP_DIR/commands/$cmd"
+    done
+    
+    # Update SCRIPT_DIR to point to temp directory
+    SCRIPT_DIR="$TEMP_DIR"
+    print_status "Files downloaded successfully"
+}
+
+# Cleanup temporary files
+cleanup_temp() {
+    if [[ -d "$TEMP_DIR" ]]; then
+        rm -rf "$TEMP_DIR"
+    fi
+}
+
 # Main installation function
 install_lugo() {
     print_status "Installing lugo command system..."
+
+    # Check if we need to download files (remote installation)
+    if needs_remote_download; then
+        download_files
+        # Set up cleanup trap for temp files
+        trap cleanup_temp EXIT
+    fi
 
     # Create install directory if it doesn't exist
     if [[ ! -d "$INSTALL_DIR" ]]; then
