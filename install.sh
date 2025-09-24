@@ -66,9 +66,11 @@ install_lugo() {
     cp -r "$SCRIPT_DIR/commands" "$INSTALL_DIR/"
 
     # Update the lugo script to use the installed commands directory and VERSION file
-    sed -i.bak "s|COMMANDS_DIR=\"\${SCRIPT_DIR}/commands\"|COMMANDS_DIR=\"$INSTALL_DIR/commands\"|" "$INSTALL_DIR/lugo"
-    sed -i.bak2 "s|VERSION_FILE=\"\${SCRIPT_DIR}/VERSION\"|VERSION_FILE=\"$INSTALL_DIR/VERSION\"|" "$INSTALL_DIR/lugo"
-    rm "$INSTALL_DIR/lugo.bak" "$INSTALL_DIR/lugo.bak2" 2>/dev/null || true
+    sed -i.bak \
+        -e "s|COMMANDS_DIR=\"\${SCRIPT_DIR}/commands\"|COMMANDS_DIR=\"$INSTALL_DIR/commands\"|" \
+        -e "s|VERSION_FILE=\"\${SCRIPT_DIR}/VERSION\"|VERSION_FILE=\"$INSTALL_DIR/VERSION\"|" \
+        "$INSTALL_DIR/lugo"
+    rm "$INSTALL_DIR/lugo.bak" 2>/dev/null || true
 
     # Create individual command symlinks for direct access
     print_status "Creating individual command symlinks..."
