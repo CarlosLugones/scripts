@@ -59,9 +59,7 @@ EOF
 
 # Get current installed version
 get_current_version() {
-    if [[ -f "$INSTALL_DIR/commands/../VERSION" ]]; then
-        cat "$INSTALL_DIR/commands/../VERSION" 2>/dev/null || echo "unknown"
-    elif [[ -f "$INSTALL_DIR/VERSION" ]]; then
+    if [[ -f "$INSTALL_DIR/VERSION" ]]; then
         cat "$INSTALL_DIR/VERSION" 2>/dev/null || echo "unknown"
     else
         echo "unknown"
