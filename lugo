@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+# lugo - Main command dispatcher for lugo scripts
+# Usage: lugo [--help] [command] [args...]
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMMANDS_DIR="${SCRIPT_DIR}/commands"
+VERSION_FILE="${SCRIPT_DIR}/VERSION"
+
+# Available commands
+AVAILABLE_COMMANDS=("dlvid" "duplicates" "renameseq" "update")
+
+# Get version
+get_version() {
+    if [[ -f "$VERSION_FILE" ]]; then
+        cat "$VERSION_FILE"
+    else
+        echo "unknown"
+    fi
+}
+
+show_help() {
+    local version
+    version=$(get_version)
+    cat << EOF
+lugo - A collection of utility scripts (v${version})
+
+Usage: lugo [--help] [--version] [command] [args...]
+
+Available commands:
+    dlvid       Download videos from internet
+    duplicates  Find duplicated files
+    renameseq   Rename files sequentially
+    update      Update lugo to the latest version
+
+Options:
+    --help      Show this help message
+    --version   Show version information
+
+Examples:
+    lugo --help
+    lugo dlvid --help
+    lugo duplicates /path/to/search
+    lugo renameseq *.jpg
+    lugo update
+
+EOF
+}
+
+# Check if command exists
+command_exists() {
+    local cmd="$1"
+    for available_cmd in "${AVAILABLE_COMMANDS[@]}"; do
+        if [[ "$cmd" == "$available_cmd" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Main logic
+main() {
+    if [[ $# -eq 0 ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+        show_help
+        exit 0
+    fi
+
+    if [[ "$1" == "--version" ]] || [[ "$1" == "-v" ]]; then
+        echo "lugo version $(get_version)"
+        exit 0
+    fi
+
+    local command="$1"
+    shift
+
+    if command_exists "$command"; then
+        local command_script="${COMMANDS_DIR}/${command}"
+        if [[ -x "$command_script" ]]; then
+            exec "$command_script" "$@"
+        else
+            echo "Error: Command script '${command}' not found or not executable" >&2
+            echo "Expected location: ${command_script}" >&2
+            exit 1
+        fi
+    else
+        echo "Error: Unknown command '${command}'" >&2
+        echo "Run 'lugo --help' to see available commands" >&2
+        exit 1
+    fi
+}
+
+main "$@"
